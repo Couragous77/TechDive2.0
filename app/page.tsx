@@ -42,7 +42,7 @@ export default function Page() {
             </Link>
           </div>
           <p className="mt-5 text-xs uppercase tracking-[0.16em] text-slate-400">
-            Next: this panel can become your live AI mentor.
+  
           </p>
         </div>
         <TerminalPanel />
@@ -71,7 +71,7 @@ export default function Page() {
 
           <Link href="/courage" className="cyber-panel block p-6 text-center transition hover:-translate-y-1">
             <Image
-              src="/images/Courage2.jpg"
+              src="/images/headShot.jpg"
               alt="Courage Tikum"
               width={180}
               height={180}
