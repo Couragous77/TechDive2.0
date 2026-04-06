@@ -9,7 +9,7 @@ export default function CouragePage() {
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-20 pt-12 md:px-8">
       <section className="cyber-panel flex flex-col items-center px-6 py-10 text-center">
         <img
-          src="/images/Courage2.jpg"
+          src="/images/headShot.jpg" 
           alt="Courage Tikum"
           className="h-40 w-40 rounded-full border-4 border-blue-300/60 object-cover shadow-[0_0_40px_rgba(59,130,246,0.35)]"
         />
