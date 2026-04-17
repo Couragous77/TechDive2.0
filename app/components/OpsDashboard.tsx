@@ -23,8 +23,8 @@ export default function OpsDashboard() {
 
           <ul className="mt-2 list-disc pl-5 text-sm text-slate-200 space-y-1">
             <li>Security+ Earned</li>
-            <li>Nessus Scanner Labs Completed</li>
-            <li>Microsoft Azure and Sentinel Labs Completed</li>
+            <li>Nessus Scanner Lab</li>
+            <li>Microsoft Azure and Sentinel Lab</li>
           </ul>
 
         </article>

@@ -23,7 +23,7 @@ export default function CouragePage() {
             <AiFillMail size={36} className="text-blue-200 transition hover:text-blue-400" />
           </a>
           <a
-            href="https://docs.google.com/document/d/1wSgEtoFXH6y1dLjL7pKwdqwOJ9X1JoZT7ysAdPUO8bo/edit?usp=sharing"
+            href="https://docs.google.com/document/d/1byosj4I3VZJa7c781zjpHaX1kaBnGloXsbeMsm3eUxY/edit?usp=sharing"
             target="_blank"
             rel="noopener noreferrer"
           >
