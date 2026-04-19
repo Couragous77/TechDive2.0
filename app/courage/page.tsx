@@ -143,7 +143,7 @@ export default function CouragePage() {
                 </svg>
               </div>
               <div className="timeline-start mb-10 md:text-end">
-                <img src="/images/Exelpn.jpg" alt="Exelon" className="h-20 w-20 rounded-full bg-white object-contain p-1" />
+                <img src="/images/fsu.jpg" alt="Exelon" className="h-20 w-20 rounded-full bg-white object-contain p-1" />
                 <time className="font-mono italic text-base text-slate-200">Aug 2025 - Dec 2025</time>
                 <div className="text-base font-black text-blue-100">Graduate Assistant - Department of Computer Science</div>
                 <p className="text-base text-slate-200">
