@@ -1,13 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 
 const projects = [
-  { id: "p1", name: "TechTrek Platform", angle: 35, ring: 35, link: "/" },
-  { id: "p2", name: "SIEM Threat Lab", angle: 125, ring: 58, link: "/justin" },
-  { id: "p3", name: "Vuln Management", angle: 210, ring: 75, link: "/cybersecurity" },
-  { id: "p4", name: "Learning Paths", angle: 300, ring: 50, link: "/programming" },
+  {
+    id: "p1",
+    name: "Cloud SOC Honeypot",
+    angle: 35,
+    ring: 35,
+    link: "https://medium.com/@couragetikum/building-a-cloud-soc-honeypot-in-azure-observing-real-cyber-attacks-with-microsoft-sentinel-and-50cdb57bf3ae",
+  },
+  {
+    id: "p2",
+    name: "Cloud SOC Honeypot Part 2",
+    angle: 125,
+    ring: 58,
+    link: "https://medium.com/@couragetikum/cloud-soc-honeypot-in-azure-part-2-investigation-and-attack-simulation-c1b953cbda6d",
+  },
+  {
+    id: "p3",
+    name: "Vulnerability Analysis Workflow",
+    angle: 210,
+    ring: 75,
+    link: "https://medium.com/@couragetikum/vulnerability-analysis-workflow-hands-on-lab-with-nessus-5172c647a6e8",
+  },
+  {
+    id: "p4",
+    name: "Vulnerability Scanning Lab (Nessus)",
+    angle: 300,
+    ring: 50,
+    link: "https://medium.com/@couragetikum/building-a-vulnerability-scanning-lab-with-nessus-kali-and-vmware-14a3caa0573a",
+  },
 ];
 
 export default function ProjectRadar() {
@@ -53,12 +76,14 @@ export default function ProjectRadar() {
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Locked Target</p>
           <p className="mt-2 text-xl font-bold text-blue-100">{active.name}</p>
           <p className="mt-3 text-sm text-slate-300">Hover or click blips to inspect active projects and jump in.</p>
-          <Link
+          <a
             href={active.link}
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-4 inline-block rounded border border-blue-400/60 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-200 transition hover:bg-blue-500/10"
           >
             Open Project
-          </Link>
+          </a>
         </div>
       </div>
     </section>
