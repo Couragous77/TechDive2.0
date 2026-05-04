@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import {
   FaArrowLeft,
@@ -8,6 +8,7 @@ import {
   FaBolt,
   FaCheck,
   FaCloud,
+  FaExternalLinkAlt,
   FaRedo,
   FaSearch,
   FaShieldAlt,
@@ -260,6 +261,106 @@ const stages: { key: View; label: string }[] = [
   { key: "assessment", label: "Assessment" },
   { key: "results", label: "Match" },
   { key: "roadmap", label: "Roadmap" },
+];
+
+type SkillResource = { label: string; href: string };
+type FoundationalSkill = {
+  name: string;
+  blurb: string;
+  icon: ComponentType<{ size?: number; "aria-hidden"?: boolean }>;
+  accent: AccentKey;
+  resources: SkillResource[];
+};
+
+const foundations: FoundationalSkill[] = [
+  {
+    name: "Networking",
+    blurb: "The plumbing — IP, ports, packets, and protocols.",
+    icon: FaCloud,
+    accent: "cyan",
+    resources: [
+      { label: "Professor Messer", href: "https://www.professormesser.com/network-plus/" },
+      { label: "Practical Networking", href: "https://www.practicalnetworking.net" },
+      { label: "THM Network Fundamentals", href: "https://tryhackme.com/module/network-fundamentals" },
+    ],
+  },
+  {
+    name: "Linux",
+    blurb: "Command line, files, permissions, and processes.",
+    icon: FaBolt,
+    accent: "emerald",
+    resources: [
+      { label: "Linux Journey", href: "https://linuxjourney.com" },
+      { label: "OverTheWire Bandit", href: "https://overthewire.org/wargames/bandit/" },
+      { label: "THM Linux Fundamentals", href: "https://tryhackme.com/module/linux-fundamentals" },
+    ],
+  },
+  {
+    name: "Python & Scripting",
+    blurb: "Automate, parse, and build your own security tools.",
+    icon: FaBolt,
+    accent: "amber",
+    resources: [
+      { label: "Automate the Boring Stuff", href: "https://automatetheboringstuff.com" },
+      { label: "Real Python", href: "https://realpython.com" },
+      { label: "PicoCTF", href: "https://picoctf.org" },
+    ],
+  },
+  {
+    name: "Web Fundamentals",
+    blurb: "HTTP, cookies, sessions — how browsers talk to servers.",
+    icon: FaSearch,
+    accent: "violet",
+    resources: [
+      { label: "MDN Web Docs", href: "https://developer.mozilla.org/en-US/docs/Learn" },
+      { label: "PortSwigger Academy", href: "https://portswigger.net/web-security" },
+      { label: "OWASP Top 10", href: "https://owasp.org/www-project-top-ten/" },
+    ],
+  },
+  {
+    name: "Cryptography",
+    blurb: "Hashes, symmetric and asymmetric crypto, and PKI.",
+    icon: FaShieldAlt,
+    accent: "violet",
+    resources: [
+      { label: "Khan Academy Crypto", href: "https://www.khanacademy.org/computing/computer-science/cryptography" },
+      { label: "Cryptopals", href: "https://cryptopals.com" },
+      { label: "PicoCTF Crypto", href: "https://picoctf.org" },
+    ],
+  },
+  {
+    name: "Security Concepts",
+    blurb: "CIA triad, defense-in-depth, and the language of risk.",
+    icon: FaShieldAlt,
+    accent: "cyan",
+    resources: [
+      { label: "NIST Glossary", href: "https://csrc.nist.gov/glossary" },
+      { label: "SANS Reading Room", href: "https://www.sans.org/white-papers/" },
+      { label: "OWASP Cheat Sheets", href: "https://cheatsheetseries.owasp.org" },
+    ],
+  },
+  {
+    name: "Threats & Attacks",
+    blurb: "Know the playbook adversaries actually use.",
+    icon: FaSearch,
+    accent: "amber",
+    resources: [
+      { label: "MITRE ATT&CK", href: "https://attack.mitre.org" },
+      { label: "Krebs on Security", href: "https://krebsonsecurity.com" },
+      { label: "The Hacker News", href: "https://thehackernews.com" },
+    ],
+  },
+  {
+    name: "Hands-On Labs",
+    blurb: "Real practice — break things, defend things, repeat.",
+    icon: FaBolt,
+    accent: "emerald",
+    resources: [
+      { label: "TryHackMe", href: "https://tryhackme.com" },
+      { label: "Hack The Box", href: "https://www.hackthebox.com" },
+      { label: "LetsDefend", href: "https://letsdefend.io" },
+    ],
+  },
 ];
 
 export default function CybersecurityPage() {
@@ -553,6 +654,211 @@ function HomeView({
           ))}
         </div>
       </section>
+
+      <section>
+        <SectionHeading
+          kicker="Curated Library"
+          title="Fundamentals & foundational skills"
+        />
+        <p className="mt-3 max-w-2xl text-sm text-slate-400">
+          The core concepts every cybersecurity path is built on — each card links to where you can learn it.
+        </p>
+        <FoundationsCarousel />
+      </section>
+    </div>
+  );
+}
+
+function FoundationsCarousel() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+  const total = foundations.length;
+
+  const measure = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>("[data-foundation-card]");
+    const cardW = card ? card.getBoundingClientRect().width : 320;
+    const step = cardW + 16;
+    const idx = Math.round(el.scrollLeft / step);
+    setActiveIndex(Math.min(total - 1, Math.max(0, idx)));
+    setAtStart(el.scrollLeft <= 4);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    measure();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
+    return () => {
+      el.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const scrollToIndex = (i: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = Math.min(total - 1, Math.max(0, i));
+    const card = el.querySelector<HTMLElement>("[data-foundation-card]");
+    const step = (card ? card.getBoundingClientRect().width : 320) + 16;
+    el.scrollTo({ left: target * step, behavior: "smooth" });
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      scrollToIndex(activeIndex - 1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      scrollToIndex(activeIndex + 1);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      scrollToIndex(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      scrollToIndex(total - 1);
+    }
+  };
+
+  return (
+    <div
+      className="relative mt-6"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Foundational cybersecurity skills"
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+    >
+      <div className="absolute -top-12 right-0 flex items-center gap-3">
+        <span
+          aria-live="polite"
+          aria-atomic="true"
+          className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:inline"
+        >
+          <span className="tabular-nums text-blue-200">{String(activeIndex + 1).padStart(2, "0")}</span>
+          <span className="mx-1 text-slate-600">/</span>
+          <span className="tabular-nums">{String(total).padStart(2, "0")}</span>
+        </span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex - 1)}
+            disabled={atStart}
+            aria-label="Previous skill"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 hover:text-blue-100 hover:shadow-[0_0_20px_rgba(96,165,250,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-blue-400/40 disabled:hover:bg-blue-500/10 disabled:hover:shadow-none"
+          >
+            <FaArrowLeft size={12} aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToIndex(activeIndex + 1)}
+            disabled={atEnd}
+            aria-label="Next skill"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 hover:text-blue-100 hover:shadow-[0_0_20px_rgba(96,165,250,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-blue-400/40 disabled:hover:bg-blue-500/10 disabled:hover:shadow-none"
+          >
+            <FaArrowRight size={12} aria-hidden />
+          </button>
+        </div>
+      </div>
+
+      <div
+        className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-slate-950 to-transparent transition-opacity duration-300 ${
+          atStart ? "opacity-0" : "opacity-100"
+        }`}
+        aria-hidden
+      />
+      <div
+        className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-slate-950 to-transparent transition-opacity duration-300 ${
+          atEnd ? "opacity-0" : "opacity-100"
+        }`}
+        aria-hidden
+      />
+
+      <div
+        ref={scrollRef}
+        className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 pb-2"
+        aria-live="polite"
+      >
+        {foundations.map((skill, idx) => {
+          const Icon = skill.icon;
+          const a = accents[skill.accent];
+          const isActive = idx === activeIndex;
+          return (
+            <div
+              key={skill.name}
+              data-foundation-card
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${idx + 1} of ${total}: ${skill.name}`}
+              className={`fade-in-up group relative flex w-[88%] shrink-0 snap-start flex-col gap-4 overflow-hidden rounded-xl border bg-slate-950/50 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/60 hover:bg-slate-900/60 hover:shadow-[0_0_30px_rgba(59,130,246,0.18)] sm:w-[60%] md:w-[46%] lg:w-[32%] ${
+                isActive
+                  ? "border-blue-400/60 bg-slate-900/70 shadow-[0_0_28px_rgba(59,130,246,0.22)]"
+                  : "border-slate-700/70 opacity-80 hover:opacity-100"
+              }`}
+              style={{ animationDelay: `${idx * 60}ms` }}
+            >
+              <div
+                className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent ${a.topBar} to-transparent`}
+                aria-hidden
+              />
+              <div className="flex items-start gap-3">
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition ${a.iconBorder} ${a.iconBg} ${a.iconText} ${
+                    isActive ? "scale-105" : ""
+                  }`}
+                >
+                  <Icon size={18} aria-hidden />
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-blue-50">{skill.name}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-300">{skill.blurb}</p>
+                </div>
+              </div>
+              <div className="mt-auto flex flex-wrap gap-2 border-t border-slate-800 pt-3">
+                {skill.resources.map((r) => (
+                  <a
+                    key={r.href}
+                    href={r.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-slate-700/80 bg-slate-900/70 px-2.5 py-1 text-xs font-medium text-slate-200 transition hover:border-blue-400/60 hover:bg-blue-500/10 hover:text-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  >
+                    {r.label}
+                    <FaExternalLinkAlt size={9} aria-hidden />
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 flex items-center justify-center gap-2" role="tablist" aria-label="Skill navigation">
+        {foundations.map((skill, i) => {
+          const isActive = i === activeIndex;
+          return (
+            <button
+              key={skill.name}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-label={`Go to ${skill.name}`}
+              onClick={() => scrollToIndex(i)}
+              className={`h-2 rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                isActive
+                  ? "w-8 bg-gradient-to-r from-blue-400 to-cyan-300 shadow-[0_0_14px_rgba(96,165,250,0.65)]"
+                  : "w-2 bg-slate-700 hover:bg-slate-500"
+              }`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -757,16 +1063,7 @@ function ResultsView({
           </div>
 
           <div className="rounded-xl border border-slate-700/70 bg-slate-950/60 p-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">Target roles</p>
-            <ul className="mt-3 space-y-2 text-sm text-slate-200">
-              {top.roles.map((role) => (
-                <li key={role} className="flex items-center gap-2">
-                  <FaCheck className="text-blue-400" aria-hidden />
-                  {role}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">Core skills</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">Core skills</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {top.skills.map((s) => (
                 <span
@@ -931,23 +1228,27 @@ function RoadmapView({
 
       <div className="cyber-panel px-6 py-8 md:px-10">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
+          <div key={`hdr-${activePhase}`} className="checkpoint-swap">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-300">
               Checkpoint {activePhase + 1} of {selectedTrack.phases.length}
             </p>
             <h3 className="mt-2 text-2xl font-bold text-blue-50">{phase.title}</h3>
             <p className="mt-1 text-sm text-slate-300">{phase.focus}</p>
           </div>
-          <span className="rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-200">
+          <span
+            key={`count-${activePhase}`}
+            className="progress-pop rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-200"
+          >
             {phase.items.length} milestones
           </span>
         </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-2">
-          {phase.items.map((item) => (
+        <div key={`grid-${activePhase}`} className="mt-6 grid gap-3 md:grid-cols-2">
+          {phase.items.map((item, idx) => (
             <div
               key={item}
-              className="flex items-start gap-3 rounded-lg border border-slate-700/70 bg-slate-950/50 px-4 py-3 text-sm text-slate-200"
+              className="milestone-item flex items-start gap-3 rounded-lg border border-slate-700/70 bg-slate-950/50 px-4 py-3 text-sm text-slate-200 transition hover:-translate-y-0.5 hover:border-blue-400/60 hover:bg-slate-900/70"
+              style={{ animationDelay: `${idx * 70}ms` }}
             >
               <FaCheck className="mt-0.5 shrink-0 text-blue-400" aria-hidden />
               <span>{item}</span>
@@ -975,19 +1276,6 @@ function RoadmapView({
             Next phase <FaArrowRight aria-hidden />
           </button>
         </div>
-      </div>
-
-      <div className="grid gap-5 md:grid-cols-2">
-        <InfoBlock kicker="Target roles" items={selectedTrack.roles} />
-        <InfoBlock
-          kicker="Program shape"
-          items={[
-            `Salary band ${selectedTrack.salary}`,
-            "8-12 week focused path",
-            "Portfolio artifacts each phase",
-            "Interview story bank at launch",
-          ]}
-        />
       </div>
 
       <div className="flex justify-center">
@@ -1057,7 +1345,10 @@ function VisualRoadmap({
           </h3>
         </div>
         <span className="rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-200">
-          {Math.round(progressPct)}% journey
+          <span key={activePhase} className="progress-pop inline-block">
+            {Math.round(progressPct)}%
+          </span>{" "}
+          journey
         </span>
       </div>
 
@@ -1089,7 +1380,15 @@ function VisualRoadmap({
             strokeWidth={6}
             strokeLinecap="round"
             strokeDasharray="4 10"
-          />
+          >
+            <animate
+              attributeName="stroke-dashoffset"
+              from="0"
+              to="-14"
+              dur="1.4s"
+              repeatCount="indefinite"
+            />
+          </path>
           <path
             d={pathD}
             fill="none"
@@ -1099,7 +1398,7 @@ function VisualRoadmap({
             pathLength={100}
             strokeDasharray={`${progressPct} 100`}
             filter="url(#roadmap-glow)"
-            className="transition-all duration-500"
+            className="transition-all duration-700 ease-out"
           />
         </svg>
 
@@ -1119,14 +1418,20 @@ function VisualRoadmap({
               aria-label={`Phase ${index + 1}: ${p.title}`}
             >
               <span
-                className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-black transition md:h-14 md:w-14 md:text-base ${
+                className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-black transition duration-300 md:h-14 md:w-14 md:text-base ${
                   isActive
                     ? "border-blue-200 bg-blue-500 text-slate-950 shadow-[0_0_32px_rgba(96,165,250,0.75)] scale-110"
                     : isCompleted
                     ? "border-blue-400/80 bg-blue-500/30 text-blue-100 shadow-[0_0_16px_rgba(59,130,246,0.4)]"
-                    : "border-slate-600 bg-slate-950 text-slate-400 hover:border-blue-400/60 hover:text-blue-200"
+                    : "border-slate-600 bg-slate-950 text-slate-400 hover:scale-105 hover:border-blue-400/60 hover:text-blue-200"
                 }`}
               >
+                {isActive && (
+                  <>
+                    <span className="roadmap-pulse-ring" aria-hidden />
+                    <span className="roadmap-pulse-ring delay-1" aria-hidden />
+                  </>
+                )}
                 {isCompleted ? <FaCheck aria-hidden /> : index + 1}
               </span>
               <span
@@ -1196,22 +1501,6 @@ function VisualRoadmap({
           );
         })}
       </ol>
-    </div>
-  );
-}
-
-function InfoBlock({ kicker, items }: { kicker: string; items: string[] }) {
-  return (
-    <div className="cyber-panel px-6 py-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-300">{kicker}</p>
-      <ul className="mt-3 space-y-2 text-sm text-slate-200">
-        {items.map((item) => (
-          <li key={item} className="flex items-start gap-2">
-            <FaCheck className="mt-1 shrink-0 text-blue-400" aria-hidden />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

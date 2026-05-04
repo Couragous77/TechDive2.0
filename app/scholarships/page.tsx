@@ -1,0 +1,111 @@
+import Link from "next/link";
+import { FaGraduationCap, FaExternalLinkAlt } from "react-icons/fa";
+
+type Scholarship = {
+  name: string;
+  blurb: string;
+  href: string;
+  tag: string;
+};
+
+const scholarships: Scholarship[] = [
+  {
+    name: "Fastweb",
+    blurb: "Personalized matches from a database of 1.5M+ scholarships.",
+    href: "https://www.fastweb.com",
+    tag: "General",
+  },
+  {
+    name: "Scholarships.com",
+    blurb: "Free search tool with 3.7M+ awards and a profile-based match.",
+    href: "https://www.scholarships.com",
+    tag: "General",
+  },
+  {
+    name: "BigFuture",
+    blurb: "College Board's free scholarship search with $300M+ in awards.",
+    href: "https://bigfuture.collegeboard.org/pay-for-college/scholarship-search",
+    tag: "General",
+  },
+  {
+    name: "Bold.org",
+    blurb: "Exclusive scholarships you can apply to with one profile.",
+    href: "https://bold.org/scholarships/",
+    tag: "General",
+  },
+  {
+    name: "UNCF",
+    blurb: "Scholarships and fellowships for students of color.",
+    href: "https://uncf.org/scholarships",
+    tag: "Diversity",
+  },
+  {
+    name: "SHPE",
+    blurb: "Awards for Hispanic students in STEM fields.",
+    href: "https://shpe.org/students/scholarships/",
+    tag: "STEM",
+  },
+  {
+    name: "Google Scholarships",
+    blurb: "Generation Google, Lime, and tech-focused funding.",
+    href: "https://buildyourfuture.withgoogle.com/scholarships",
+    tag: "Tech",
+  },
+  {
+    name: "Microsoft Scholarships",
+    blurb: "Tuition awards for students pursuing tech careers.",
+    href: "https://careers.microsoft.com/v2/global/en/scholarships",
+    tag: "Tech",
+  },
+  {
+    name: "SWE",
+    blurb: "Society of Women Engineers scholarships for women in STEM.",
+    href: "https://swe.org/scholarships/",
+    tag: "STEM",
+  },
+];
+
+export default function ScholarshipsPage() {
+  return (
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-4 pb-20 pt-14 md:px-8 md:pt-20">
+      <section className="cyber-panel flex flex-col items-center gap-4 px-6 py-12 text-center md:py-16">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10">
+          <FaGraduationCap className="text-blue-200" size={36} aria-hidden />
+        </div>
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-300">Funding Your Path</p>
+        <h1 className="text-4xl font-black text-blue-50 md:text-6xl">Scholarship Hub</h1>
+        <p className="max-w-xl text-slate-300">
+          Trusted places to find money for school.
+        </p>
+      </section>
+
+      <section className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {scholarships.map((s) => (
+          <a
+            key={s.name}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cyber-panel group flex flex-col gap-3 p-6 transition hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-300">{s.tag}</span>
+              <FaExternalLinkAlt className="text-slate-400 transition group-hover:text-blue-300" size={12} aria-hidden />
+            </div>
+            <h2 className="text-xl font-bold text-blue-100">{s.name}</h2>
+            <p className="text-sm text-slate-300">{s.blurb}</p>
+          </a>
+        ))}
+      </section>
+
+      <div className="text-center">
+        <Link
+          href="/#resources-section"
+          className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-300 hover:text-blue-200"
+        >
+          ← Back to Resources
+        </Link>
+      </div>
+    </div>
+  );
+}

@@ -31,10 +31,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CursorTrail />
         <CommandPalette />
 
-        <div className="border-b border-blue-500/20 bg-slate-950/60 px-4 py-1 text-center text-[11px] uppercase tracking-[0.16em] text-blue-300">
-          Uptime: 99.99% | Mode: Learning + Building | Background: {backgroundMode} | Press Ctrl+K for quick commands
-        </div>
-
         <header className="sticky top-0 z-50 border-b border-blue-500/20 bg-slate-950/80 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
             <Link href="/" className="group flex items-center gap-3">
