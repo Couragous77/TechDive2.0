@@ -22,37 +22,14 @@ import { VscVscode } from "react-icons/vsc";
 import { SiVirustotal } from "react-icons/si";
 import { SiWireshark } from "react-icons/si";
 import { SiKalilinux } from "react-icons/si";
-
-
 import React, { useEffect, useState } from 'react';
-import Loading from '../components/loading';
 import './styles.css';
 
 
 const Justin = () => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate loading delay (e.g., 5 seconds)
   useEffect(() => {
-      const timer = setTimeout(() => {
-          setIsLoading(false);  // Stop loading after 5 seconds
-      }, 5000);
-
-      // Cleanup timer
-      return () => clearTimeout(timer);
+      window.scrollTo(0, 0);
   }, []);
-
-  // Scroll to the top when loading is complete
-  useEffect(() => {
-      if (!isLoading) {
-          window.scrollTo(0, 0);  // Scroll to the top of the page
-      }
-  }, [isLoading]); // Run this effect when isLoading changes
-
-  // Render the loading component if still loading
-  if (isLoading) {
-      return <Loading />;
-  }
 
   return (
       <div>

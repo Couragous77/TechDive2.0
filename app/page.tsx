@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaGraduationCap } from "react-icons/fa";
 import TerminalPanel from "./components/TerminalPanel";
 import SocAlertFeed from "./components/SocAlertFeed";
 import PurposePanel from "./components/PurposePanel";
@@ -140,19 +139,13 @@ export default function Page() {
           ))}
           <Reveal delay={resourceCards.length * 120}>
             <Link href="/scholarships" className="cyber-panel group block p-5">
-              <div className="relative flex h-52 items-center justify-center overflow-hidden rounded-lg border border-blue-500/30 bg-gradient-to-br from-blue-600/25 via-indigo-600/20 to-purple-600/25 transition duration-500 group-hover:from-blue-500/35 group-hover:via-indigo-500/30 group-hover:to-purple-500/35">
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-40"
-                  style={{
-                    backgroundImage:
-                      "radial-gradient(circle at 20% 30%, rgba(147,197,253,0.35), transparent 50%), radial-gradient(circle at 80% 70%, rgba(168,85,247,0.3), transparent 55%)",
-                  }}
-                  aria-hidden
-                />
-                <FaGraduationCap
-                  className="relative text-blue-100 transition duration-500 group-hover:scale-110 group-hover:text-white"
-                  size={88}
-                  aria-hidden
+              <div className="relative h-52 overflow-hidden rounded-lg border border-blue-500/30">
+                <Image
+                  src="/images/Graduation-Cap-Clipart-edit-online.png"
+                  alt="Graduation cap illustration"
+                  width={1200}
+                  height={1200}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               </div>
               <h3 className="mt-5 text-2xl font-bold text-blue-100">Scholarship Hub</h3>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import {
   FaArrowLeft,
@@ -9,6 +9,7 @@ import {
   FaCheck,
   FaCloud,
   FaExternalLinkAlt,
+  FaPlay,
   FaRedo,
   FaSearch,
   FaShieldAlt,
@@ -28,6 +29,12 @@ type Track = {
   skills: string[];
   salary: string;
   roles: string[];
+  video: {
+    title: string;
+    duration: string;
+    takeaway: string;
+    chapters: string[];
+  };
   phases: { title: string; focus: string; items: string[] }[];
 };
 
@@ -109,6 +116,12 @@ const tracks: Track[] = [
     skills: ["Log Analysis", "SIEM Tools", "Alert Triage", "Incident Response", "Threat Intel"],
     salary: "$55K - $85K",
     roles: ["SOC Analyst I/II", "Detection Analyst", "Security Ops Intern"],
+    video: {
+      title: "SOC Analyst overview",
+      duration: "08:42",
+      takeaway: "Alert triage, workflows, and daily SOC work.",
+      chapters: ["SOC workflow", "Alert triage"],
+    },
     phases: [
       { title: "Foundations", focus: "Build the mental model", items: ["Security fundamentals", "Networking basics", "OS concepts", "CIA triad deep dive"] },
       { title: "Core Skills", focus: "Learn the toolkit", items: ["SIEM platforms", "Log analysis and parsing", "Alert triage workflows", "IOC identification"] },
@@ -128,6 +141,12 @@ const tracks: Track[] = [
     skills: ["SIGMA Rules", "KQL/SPL", "MITRE ATT&CK", "Data Engineering", "Automation"],
     salary: "$75K - $120K",
     roles: ["Detection Engineer", "Security Engineer", "Threat Detection Intern"],
+    video: {
+      title: "Detection Engineering overview",
+      duration: "10:15",
+      takeaway: "Rules, tuning, and detection design.",
+      chapters: ["Rule writing", "False positives"],
+    },
     phases: [
       { title: "Foundations", focus: "Understand the adversary", items: ["Threat landscape overview", "Attack frameworks", "Log source taxonomy", "Detection theory"] },
       { title: "Core Skills", focus: "Author detections", items: ["SIGMA rule authoring", "KQL and SPL queries", "Data pipeline basics", "False positive tuning"] },
@@ -147,6 +166,12 @@ const tracks: Track[] = [
     skills: ["AWS/Azure/GCP", "IAM", "Cloud Misconfigs", "Terraform", "Container Security"],
     salary: "$80K - $130K",
     roles: ["Cloud Security Analyst", "Cloud Security Engineer", "DevSecOps Intern"],
+    video: {
+      title: "Cloud Security overview",
+      duration: "09:06",
+      takeaway: "IAM, guardrails, and cloud misconfigurations.",
+      chapters: ["IAM basics", "Misconfigurations"],
+    },
     phases: [
       { title: "Foundations", focus: "Map the cloud", items: ["Cloud computing basics", "Shared responsibility model", "Identity and access management", "Cloud networking"] },
       { title: "Core Skills", focus: "Harden the stack", items: ["AWS and Azure security services", "IAM policy design", "Cloud misconfig detection", "Infrastructure as Code"] },
@@ -166,6 +191,12 @@ const tracks: Track[] = [
     skills: ["Hypothesis-Driven Hunting", "Forensics", "Behavioral Analysis", "Threat Intel", "EDR Tools"],
     salary: "$85K - $130K",
     roles: ["Threat Hunter", "IR Analyst", "Adversary Emulation Intern"],
+    video: {
+      title: "Threat Hunting overview",
+      duration: "11:03",
+      takeaway: "Hunt strategy, evidence, and hidden activity.",
+      chapters: ["Hunt process", "Telemetry clues"],
+    },
     phases: [
       { title: "Foundations", focus: "Learn how attackers move", items: ["Threat intelligence basics", "Kill chain and diamond model", "Endpoint forensics intro", "Behavioral indicators"] },
       { title: "Core Skills", focus: "Master the tools", items: ["Hypothesis formation", "EDR tool proficiency", "Memory and disk forensics", "Network traffic analysis"] },
@@ -362,6 +393,29 @@ const foundations: FoundationalSkill[] = [
     ],
   },
 ];
+
+const foundationSplitIndex = Math.ceil(foundations.length / 2);
+const leftFoundations = foundations.slice(0, foundationSplitIndex);
+const rightFoundations = foundations.slice(foundationSplitIndex);
+const rightFoundationNames = new Set(rightFoundations.map((foundation) => foundation.name));
+
+const foundationToTracks: Record<string, TrackId[]> = {
+  "Networking": ["soc", "cloud"],
+  "Linux": ["soc", "cloud"],
+  "Python & Scripting": ["detection", "threat"],
+  "Web Fundamentals": ["soc", "detection"],
+  "Cryptography": ["cloud", "detection"],
+  "Security Concepts": ["soc", "threat"],
+  "Threats & Attacks": ["detection", "threat"],
+  "Hands-On Labs": ["soc", "detection", "cloud", "threat"],
+};
+
+const accentHex: Record<AccentKey, string> = {
+  cyan: "#22d3ee",
+  violet: "#a78bfa",
+  emerald: "#34d399",
+  amber: "#fbbf24",
+};
 
 export default function CybersecurityPage() {
   const [view, setView] = useState<View>("home");
@@ -661,167 +715,154 @@ function HomeView({
           title="Fundamentals & foundational skills"
         />
         <p className="mt-3 max-w-2xl text-sm text-slate-400">
-          The core concepts every cybersecurity path is built on — each card links to where you can learn it.
+          The core concepts every cybersecurity path is built on — hover a skill to see which tracks it feeds.
         </p>
-        <FoundationsCarousel />
+        <FoundationsMap />
       </section>
     </div>
   );
 }
 
-function FoundationsCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
-  const total = foundations.length;
+type Hover = { kind: "f"; name: string } | { kind: "t"; id: TrackId } | null;
 
-  const measure = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>("[data-foundation-card]");
-    const cardW = card ? card.getBoundingClientRect().width : 320;
-    const step = cardW + 16;
-    const idx = Math.round(el.scrollLeft / step);
-    setActiveIndex(Math.min(total - 1, Math.max(0, idx)));
-    setAtStart(el.scrollLeft <= 4);
-    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+function FoundationsMap() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fRefs = useRef<Record<string, HTMLElement | null>>({});
+  const tRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [hover, setHover] = useState<Hover>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [paths, setPaths] = useState<
+    Array<{ key: string; d: string; foundation: string; track: TrackId; color: string }>
+  >([]);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+
+  const recompute = () => {
+    const c = containerRef.current;
+    if (!c) return;
+    const cr = c.getBoundingClientRect();
+    setSize({ w: cr.width, h: cr.height });
+    const next: typeof paths = [];
+    for (const f of foundations) {
+      const fEl = fRefs.current[f.name];
+      if (!fEl) continue;
+      const fr = fEl.getBoundingClientRect();
+      const foundationSide = rightFoundationNames.has(f.name) ? "right" : "left";
+      const fX =
+        foundationSide === "right" ? fr.left - cr.left : fr.right - cr.left;
+      const fY = fr.top + fr.height / 2 - cr.top;
+      const tracksOut = foundationToTracks[f.name] || [];
+      for (const tId of tracksOut) {
+        const tEl = tRefs.current[tId];
+        if (!tEl) continue;
+        const tr = tEl.getBoundingClientRect();
+        const tX =
+          foundationSide === "right" ? tr.right - cr.left : tr.left - cr.left;
+        const tY = tr.top + tr.height / 2 - cr.top;
+        const direction = foundationSide === "right" ? -1 : 1;
+        const distance = Math.abs(tX - fX);
+        const cp1x = fX + direction * distance * 0.55;
+        const cp2x = tX - direction * distance * 0.45;
+        const t = tracks.find((tr) => tr.id === tId);
+        const color = t ? accentHex[t.accent] : "#94a3b8";
+        next.push({
+          key: `${f.name}->${tId}`,
+          d: `M ${fX.toFixed(1)} ${fY.toFixed(1)} C ${cp1x.toFixed(1)} ${fY.toFixed(1)}, ${cp2x.toFixed(1)} ${tY.toFixed(1)}, ${tX.toFixed(1)} ${tY.toFixed(1)}`,
+          foundation: f.name,
+          track: tId,
+          color,
+        });
+      }
+    }
+    setPaths(next);
   };
 
-  useEffect(() => {
-    measure();
-    const el = scrollRef.current;
+  useLayoutEffect(() => {
+    recompute();
+    const el = containerRef.current;
     if (!el) return;
-    el.addEventListener("scroll", measure, { passive: true });
-    window.addEventListener("resize", measure);
+    const ro = new ResizeObserver(recompute);
+    ro.observe(el);
+    window.addEventListener("resize", recompute);
     return () => {
-      el.removeEventListener("scroll", measure);
-      window.removeEventListener("resize", measure);
+      ro.disconnect();
+      window.removeEventListener("resize", recompute);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const scrollToIndex = (i: number) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const target = Math.min(total - 1, Math.max(0, i));
-    const card = el.querySelector<HTMLElement>("[data-foundation-card]");
-    const step = (card ? card.getBoundingClientRect().width : 320) + 16;
-    el.scrollTo({ left: target * step, behavior: "smooth" });
+  const isPathActive = (p: (typeof paths)[number]) => {
+    if (!hover) return false;
+    if (hover.kind === "f") return p.foundation === hover.name;
+    return p.track === hover.id;
   };
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      scrollToIndex(activeIndex - 1);
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      scrollToIndex(activeIndex + 1);
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      scrollToIndex(0);
-    } else if (e.key === "End") {
-      e.preventDefault();
-      scrollToIndex(total - 1);
-    }
+  const isFoundationLit = (name: string) => {
+    if (!hover) return false;
+    if (hover.kind === "f") return hover.name === name;
+    return (foundationToTracks[name] || []).includes(hover.id);
   };
 
-  return (
-    <div
-      className="relative mt-6"
-      role="region"
-      aria-roledescription="carousel"
-      aria-label="Foundational cybersecurity skills"
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-    >
-      <div className="absolute -top-12 right-0 flex items-center gap-3">
-        <span
-          aria-live="polite"
-          aria-atomic="true"
-          className="hidden text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:inline"
-        >
-          <span className="tabular-nums text-blue-200">{String(activeIndex + 1).padStart(2, "0")}</span>
-          <span className="mx-1 text-slate-600">/</span>
-          <span className="tabular-nums">{String(total).padStart(2, "0")}</span>
-        </span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => scrollToIndex(activeIndex - 1)}
-            disabled={atStart}
-            aria-label="Previous skill"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 hover:text-blue-100 hover:shadow-[0_0_20px_rgba(96,165,250,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-blue-400/40 disabled:hover:bg-blue-500/10 disabled:hover:shadow-none"
-          >
-            <FaArrowLeft size={12} aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollToIndex(activeIndex + 1)}
-            disabled={atEnd}
-            aria-label="Next skill"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 hover:text-blue-100 hover:shadow-[0_0_20px_rgba(96,165,250,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-blue-400/40 disabled:hover:bg-blue-500/10 disabled:hover:shadow-none"
-          >
-            <FaArrowRight size={12} aria-hidden />
-          </button>
-        </div>
-      </div>
+  const isTrackLit = (id: TrackId) => {
+    if (!hover) return false;
+    if (hover.kind === "t") return hover.id === id;
+    return (foundationToTracks[hover.name] || []).includes(id);
+  };
 
-      <div
-        className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-slate-950 to-transparent transition-opacity duration-300 ${
-          atStart ? "opacity-0" : "opacity-100"
-        }`}
-        aria-hidden
-      />
-      <div
-        className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-slate-950 to-transparent transition-opacity duration-300 ${
-          atEnd ? "opacity-0" : "opacity-100"
-        }`}
-        aria-hidden
-      />
-
-      <div
-        ref={scrollRef}
-        className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-4 pb-2"
-        aria-live="polite"
-      >
-        {foundations.map((skill, idx) => {
-          const Icon = skill.icon;
-          const a = accents[skill.accent];
-          const isActive = idx === activeIndex;
-          return (
-            <div
-              key={skill.name}
-              data-foundation-card
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${idx + 1} of ${total}: ${skill.name}`}
-              className={`fade-in-up group relative flex w-[88%] shrink-0 snap-start flex-col gap-4 overflow-hidden rounded-xl border bg-slate-950/50 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/60 hover:bg-slate-900/60 hover:shadow-[0_0_30px_rgba(59,130,246,0.18)] sm:w-[60%] md:w-[46%] lg:w-[32%] ${
-                isActive
-                  ? "border-blue-400/60 bg-slate-900/70 shadow-[0_0_28px_rgba(59,130,246,0.22)]"
-                  : "border-slate-700/70 opacity-80 hover:opacity-100"
-              }`}
-              style={{ animationDelay: `${idx * 60}ms` }}
+  const renderFoundationColumn = (
+    items: FoundationalSkill[],
+    side: "left" | "right"
+  ) => (
+    <div className="flex flex-col justify-center gap-3">
+      {items.map((f) => {
+        const Icon = f.icon;
+        const a = accents[f.accent];
+        const lit = isFoundationLit(f.name);
+        const dimmed = hover !== null && !lit;
+        const isExpanded = expanded === f.name;
+        return (
+          <div key={f.name} className="flex flex-col gap-2">
+            <button
+              ref={(el) => {
+                fRefs.current[f.name] = el;
+              }}
+              type="button"
+              onMouseEnter={() => setHover({ kind: "f", name: f.name })}
+              onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover({ kind: "f", name: f.name })}
+              onBlur={() => setHover(null)}
+              onClick={() => setExpanded(isExpanded ? null : f.name)}
+              aria-expanded={isExpanded}
+              className={`group flex items-center gap-3 rounded-lg border bg-slate-950/50 px-4 py-3 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                lit
+                  ? `${a.iconBorder} bg-slate-900/70 shadow-[0_0_24px_rgba(96,165,250,0.18)]`
+                  : "border-slate-700/60"
+              } ${dimmed ? "opacity-60" : "opacity-100"}`}
             >
-              <div
-                className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent ${a.topBar} to-transparent`}
-                aria-hidden
-              />
-              <div className="flex items-start gap-3">
-                <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition ${a.iconBorder} ${a.iconBg} ${a.iconText} ${
-                    isActive ? "scale-105" : ""
-                  }`}
-                >
-                  <Icon size={18} aria-hidden />
-                </span>
-                <div>
-                  <h3 className="text-lg font-bold text-blue-50">{skill.name}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-300">{skill.blurb}</p>
-                </div>
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${a.iconBorder} ${a.iconBg} ${a.iconText}`}
+              >
+                <Icon size={16} aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold text-blue-50">{f.name}</div>
+                <div className="truncate text-xs text-slate-400">{f.blurb}</div>
               </div>
-              <div className="mt-auto flex flex-wrap gap-2 border-t border-slate-800 pt-3">
-                {skill.resources.map((r) => (
+              <span
+                className={`text-[10px] font-semibold uppercase tracking-wider transition ${
+                  isExpanded ? "text-blue-200" : "text-slate-500 group-hover:text-blue-200"
+                }`}
+                aria-hidden
+              >
+                {isExpanded ? "Hide" : "Learn"}
+              </span>
+            </button>
+            {isExpanded && (
+              <div
+                className={`flex flex-wrap gap-2 ${
+                  side === "right" ? "pr-12" : "pl-12"
+                }`}
+              >
+                {f.resources.map((r) => (
                   <a
                     key={r.href}
                     href={r.href}
@@ -834,28 +875,138 @@ function FoundationsCarousel() {
                   </a>
                 ))}
               </div>
-            </div>
-          );
-        })}
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className="mt-6">
+      {/* Desktop: connected map */}
+      <div ref={containerRef} className="relative hidden md:block">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)_minmax(0,1fr)] gap-x-8 lg:gap-x-12">
+          {renderFoundationColumn(leftFoundations, "left")}
+
+          <div className="grid content-center gap-6 self-stretch py-2">
+            {tracks.map((t) => {
+              const a = accents[t.accent];
+              const TIcon = t.icon;
+              const lit = isTrackLit(t.id);
+              const dimmed = hover !== null && !lit;
+              return (
+                <div
+                  key={t.id}
+                  ref={(el) => {
+                    tRefs.current[t.id] = el;
+                  }}
+                  onMouseEnter={() => setHover({ kind: "t", id: t.id })}
+                  onMouseLeave={() => setHover(null)}
+                  className={`mx-auto flex w-full max-w-[24rem] items-center gap-3 rounded-lg border px-4 py-4 transition-all duration-200 ${
+                    lit
+                      ? `${a.iconBorder} bg-slate-900/70 shadow-[0_0_30px_rgba(96,165,250,0.22)]`
+                      : "border-slate-700/60 bg-slate-950/50"
+                  } ${dimmed ? "opacity-60" : "opacity-100"}`}
+                >
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md border ${a.iconBorder} ${a.iconBg} ${a.iconText}`}
+                  >
+                    <TIcon size={18} aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-blue-50">{t.title}</div>
+                    <div className={`text-xs ${a.subtitle}`}>{t.subtitle}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {renderFoundationColumn(rightFoundations, "right")}
+        </div>
+
+        <svg
+          className="pointer-events-none absolute inset-0 z-10"
+          width={size.w}
+          height={size.h}
+          viewBox={`0 0 ${Math.max(1, size.w)} ${Math.max(1, size.h)}`}
+          aria-hidden
+        >
+          {paths.map((p) => {
+            const active = isPathActive(p);
+            const dimmed = hover !== null && !active;
+            return (
+              <path
+                key={p.key}
+                d={p.d}
+                fill="none"
+                stroke={p.color}
+                strokeWidth={active ? 2 : 1}
+                strokeLinecap="round"
+                opacity={active ? 0.95 : dimmed ? 0.06 : 0.3}
+                style={{ transition: "opacity 200ms, stroke-width 200ms" }}
+              />
+            );
+          })}
+        </svg>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-2" role="tablist" aria-label="Skill navigation">
-        {foundations.map((skill, i) => {
-          const isActive = i === activeIndex;
+      {/* Mobile: stacked list with track chips */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {foundations.map((f) => {
+          const Icon = f.icon;
+          const a = accents[f.accent];
+          const tracksOut = foundationToTracks[f.name] || [];
           return (
-            <button
-              key={skill.name}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              aria-label={`Go to ${skill.name}`}
-              onClick={() => scrollToIndex(i)}
-              className={`h-2 rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
-                isActive
-                  ? "w-8 bg-gradient-to-r from-blue-400 to-cyan-300 shadow-[0_0_14px_rgba(96,165,250,0.65)]"
-                  : "w-2 bg-slate-700 hover:bg-slate-500"
-              }`}
-            />
+            <div
+              key={f.name}
+              className="rounded-lg border border-slate-700/60 bg-slate-950/50 p-4"
+            >
+              <div className="flex items-start gap-3">
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${a.iconBorder} ${a.iconBg} ${a.iconText}`}
+                >
+                  <Icon size={16} aria-hidden />
+                </span>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-blue-50">{f.name}</div>
+                  <div className="mt-1 text-xs text-slate-400">{f.blurb}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-slate-800 pt-3">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                  Feeds
+                </span>
+                {tracksOut.map((tId) => {
+                  const t = tracks.find((tr) => tr.id === tId);
+                  if (!t) return null;
+                  const ta = accents[t.accent];
+                  return (
+                    <span
+                      key={tId}
+                      className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold ${ta.chipBorder} ${ta.chipBg} ${ta.chipText}`}
+                    >
+                      {t.title}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {f.resources.map((r) => (
+                  <a
+                    key={r.href}
+                    href={r.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-700/80 bg-slate-900/70 px-2 py-1 text-xs text-slate-200 hover:border-blue-400/60 hover:text-blue-100"
+                  >
+                    {r.label}
+                    <FaExternalLinkAlt size={9} aria-hidden />
+                  </a>
+                ))}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -905,6 +1056,59 @@ function TrackCard({ track, onOpen }: { track: Track; onOpen: () => void }) {
         <span className="font-semibold text-blue-200">{track.salary}</span>
       </div>
     </button>
+  );
+}
+
+function TrackVideoPlaceholder({
+  track,
+  compact = false,
+}: {
+  track: Track;
+  compact?: boolean;
+}) {
+  const a = accents[track.accent];
+
+  return (
+    <div className={`mt-5 rounded-xl border ${a.iconBorder} bg-slate-950/70 ${compact ? "p-3" : "p-4"} ${compact ? "" : "shadow-[0_0_30px_rgba(15,23,42,0.35)]"}`}>
+      <div className={`relative overflow-hidden rounded-lg border ${a.iconBorder} bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_rgba(2,6,23,0.96)_62%)] ${compact ? "aspect-[16/10]" : "aspect-[5/4]"}`}>
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(148,163,184,0.08)_0%,transparent_45%,rgba(148,163,184,0.03)_100%)]" aria-hidden />
+        <div className="absolute left-3 top-3 rounded-full border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+          Video
+        </div>
+        <div className={`absolute right-3 top-3 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.18em] ${a.iconBorder} ${a.chipBg} ${a.chipText}`}>
+          {track.video.duration}
+        </div>
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={`flex ${compact ? "h-14 w-14" : "h-16 w-16"} items-center justify-center rounded-full border ${a.iconBorder} bg-slate-950/80 ${a.iconText} shadow-[0_0_28px_rgba(59,130,246,0.2)]`}>
+            <FaPlay className="ml-0.5" size={compact ? 18 : 20} aria-hidden />
+          </span>
+        </div>
+
+        <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent ${compact ? "p-4" : "p-5"}`}>
+          <p className={`${compact ? "text-sm" : "text-base"} font-semibold text-blue-50`}>{track.video.title}</p>
+          <p className={`mt-1 ${compact ? "text-xs" : "text-sm"} text-slate-300`}>
+            {track.video.takeaway}
+          </p>
+        </div>
+      </div>
+
+      <div className={`mt-3 ${compact ? "space-y-1.5" : "space-y-2.5"}`}>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+          Chapters
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {track.video.chapters.map((chapter) => (
+            <span
+              key={chapter}
+              className={`rounded-md border px-2 py-1 text-[11px] ${a.chipBorder} ${a.chipBg} ${a.chipText}`}
+            >
+              {chapter}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1181,42 +1385,48 @@ function RoadmapView({
 
       <div className="cyber-panel relative overflow-hidden px-6 py-10 md:px-12 md:py-12">
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent ${a.topBar} to-transparent`} aria-hidden />
-        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div className="flex items-start gap-5">
-            <span className={`flex h-14 w-14 items-center justify-center rounded-xl border ${a.iconBorder} ${a.iconBg} ${a.iconText}`}>
-              <Icon size={28} aria-hidden />
-            </span>
-            <div>
-              <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${a.subtitle}`}>
-                {selectedTrack.subtitle}
-              </p>
-              <h2 className="mt-2 text-3xl font-black text-blue-50 md:text-4xl">{selectedTrack.title}</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 md:text-base">
-                {selectedTrack.desc}
-              </p>
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_28rem] xl:items-start">
+          <div>
+            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-start gap-5">
+                <span className={`flex h-14 w-14 items-center justify-center rounded-xl border ${a.iconBorder} ${a.iconBg} ${a.iconText}`}>
+                  <Icon size={28} aria-hidden />
+                </span>
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${a.subtitle}`}>
+                    {selectedTrack.subtitle}
+                  </p>
+                  <h2 className="mt-2 text-3xl font-black text-blue-50 md:text-4xl">{selectedTrack.title}</h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 md:text-base">
+                    {selectedTrack.desc}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTrack(null);
+                  setActivePhase(0);
+                }}
+                className="cyber-button-secondary self-start"
+              >
+                View all tracks
+              </button>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-2">
+              {selectedTrack.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className={`rounded-md border px-2.5 py-1 text-xs ${a.chipBorder} ${a.chipBg} ${a.chipText}`}
+                >
+                  {skill}
+                </span>
+              ))}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedTrack(null);
-              setActivePhase(0);
-            }}
-            className="cyber-button-secondary self-start"
-          >
-            View all tracks
-          </button>
-        </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {selectedTrack.skills.map((skill) => (
-            <span
-              key={skill}
-              className={`rounded-md border px-2.5 py-1 text-xs ${a.chipBorder} ${a.chipBg} ${a.chipText}`}
-            >
-              {skill}
-            </span>
-          ))}
+          <TrackVideoPlaceholder track={selectedTrack} />
         </div>
       </div>
 

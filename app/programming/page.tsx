@@ -19,7 +19,6 @@ import {
   FaRedo,
   FaServer,
 } from "react-icons/fa";
-import Loading from "../components/loading";
 
 // --- Types & theme tokens ----------------------------------------------------
 
@@ -575,7 +574,6 @@ const stages: { key: View; label: string }[] = [
 // --- Page component ----------------------------------------------------------
 
 export default function ProgrammingPage() {
-  const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<View>("home");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   /** Ordered picks for the current attempt; used to re-score on submit and for Q7 tie-break ordering. */
@@ -594,15 +592,8 @@ export default function ProgrammingPage() {
   const [assessmentDeck, setAssessmentDeck] = useState<AssessmentQuestion[] | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setIsLoading(false), 600);
-    return () => window.clearTimeout(timer);
+    window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      window.scrollTo(0, 0);
-    }
-  }, [isLoading]);
 
   // Restore scores / roadmap from last visit (answers are not persisted).
   useEffect(() => {
@@ -781,10 +772,6 @@ export default function ProgrammingPage() {
   const activeAssessmentQuestions = assessmentDeck ?? questions;
   const question = activeAssessmentQuestions[currentQuestion];
   const progressPct = ((currentQuestion + 1) / activeAssessmentQuestions.length) * 100;
-
-  if (isLoading) {
-    return <Loading />;
-  }
 
   return (
     <div className="cyber-bg relative min-h-screen overflow-hidden">
